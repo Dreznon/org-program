@@ -161,11 +161,25 @@ function categoryView(category) {
     const card = document.createElement('div');
     card.className = 'item-card';
     const tagText = item.tags.length ? ` • ${item.tags.join(', ')}` : '';
-    card.innerHTML = `
-      <div class="name">${item.name} <span class="meta">×${item.quantity}</span></div>
-      <div class="desc">${item.description || ''}</div>
-      <div class="tags">${item.category}${tagText}</div>
-    `;
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'name';
+    nameDiv.textContent = item.name + ' ';
+    const qtySpan = document.createElement('span');
+    qtySpan.className = 'meta';
+    qtySpan.textContent = `×${item.quantity}`;
+    nameDiv.appendChild(qtySpan);
+
+    const descDiv = document.createElement('div');
+    descDiv.className = 'desc';
+    descDiv.textContent = item.description || '';
+
+    const tagsDiv = document.createElement('div');
+    tagsDiv.className = 'tags';
+    tagsDiv.textContent = `${item.category}${tagText}`;
+
+    card.appendChild(nameDiv);
+    card.appendChild(descDiv);
+    card.appendChild(tagsDiv);
     list.appendChild(card);
   }
   app.appendChild(list);

@@ -1,0 +1,19 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:security/recommended"
+  ],
+  "plugins": ["security", "no-unsanitized"],
+  "rules": {
+    "no-unsanitized/method": "error",
+    "no-unsanitized/property": "error"
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    "api/**"
+  ]
+}

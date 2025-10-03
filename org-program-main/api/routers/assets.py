@@ -11,7 +11,7 @@ from sqlmodel import Session
 from ..deps import get_db_session
 from ..db import get_upload_dir, reset_fts_for_item
 from ..models import Asset, Item
-from ..services.exif import extract_exif_stub
+from ..services.exif import extract_exif
 from ..services.ocr import extract_ocr_stub
 
 
@@ -51,8 +51,8 @@ async def upload_asset(
     mime_type = file.content_type or mimetypes.guess_type(str(dest_path))[0] or "application/octet-stream"
     checksum = sha256.hexdigest()
 
-    # Extract metadata (stubs)
-    exif = extract_exif_stub(str(dest_path))
+    # Extract metadata
+    exif = extract_exif(str(dest_path))
     ocr = extract_ocr_stub(str(dest_path))
 
     asset = Asset(
@@ -68,6 +68,36 @@ async def upload_asset(
     session.add(asset)
     session.commit()
     session.refresh(asset)
+
+    # Auto-populate item fields from EXIF if they're empty
+    item_updated = False
+    
+    # Set title from filename (no extension) if empty
+    if not item.title or item.title.strip() == "":
+        filename_without_ext = os.path.splitext(original_name)[0]
+        item.title = filename_without_ext
+        item_updated = True
+    
+    # Set format from MIME type if empty
+    if not item.format or item.format.strip() == "":
+        item.format = mime_type
+        item_updated = True
+    
+    # Set date from EXIF if empty and available
+    if (not item.date or item.date.strip() == "") and exif.get("date"):
+        item.date = exif["date"]
+        item_updated = True
+    
+    # Set coverage from GPS if empty and available
+    if (not item.coverage or item.coverage.strip() == "") and exif.get("gps"):
+        gps = exif["gps"]
+        item.coverage = f"{gps['lat']},{gps['lon']}"
+        item_updated = True
+    
+    # Commit item updates if any were made
+    if item_updated:
+        session.commit()
+        session.refresh(item)
 
     # Update FTS with OCR text if any
     ocr_text = str(ocr.get("text", "") or "")

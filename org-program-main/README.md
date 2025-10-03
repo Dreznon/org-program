@@ -2,11 +2,32 @@
 
 A FastAPI backend for the Organization App with SQLite database and file upload capabilities.
 
-## Quick Start
+## Quick Start (Windows)
+
+- Double-click **start_dev.bat** (beginners)
+- Or run **start_dev.ps1** (PowerShell users)
+
+This starts:
+- FastAPI backend → http://127.0.0.1:8000
+- Vite frontend → open the URL printed by Vite (usually http://localhost:5174)
+
+## Manual Setup
 
 ### Prerequisites
 - Python 3.8+
 - pip
+
+### Dependencies
+
+The application requires the following Python packages:
+- **FastAPI** - Web framework
+- **SQLModel** - Database ORM
+- **Pillow** - Image processing and EXIF extraction
+- **piexif** - EXIF data manipulation
+- **uvicorn** - ASGI server
+- **python-multipart** - File upload support
+- **lxml** - XML processing
+- **pytest** - Testing framework
 
 ### Setup
 
@@ -74,6 +95,11 @@ The backend is configured to allow requests from:
 - Files are stored in the `uploads/` directory
 - Each item gets its own subdirectory
 - Supported file types: images, documents, etc.
+- **EXIF auto-population**: JPEG images with EXIF data automatically populate:
+  - `title` ← filename (without extension)
+  - `format` ← MIME type
+  - `date` ← EXIF DateTimeOriginal/CreateDate (if present)
+  - `coverage` ← GPS coordinates as "lat,lon" (if present)
 - OCR processing available for images
 - File metadata is extracted and stored
 

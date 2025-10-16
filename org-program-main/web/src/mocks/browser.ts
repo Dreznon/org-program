@@ -14,8 +14,19 @@ export const handlers = [
   http.post('/api/categorize', async ({ request }) => {
     const body = await request.json().catch(() => ({})) as any
     const name: string = (body?.name ?? '').toLowerCase()
-    const category = name.includes('knife') ? 'Kitchen' : 'Miscellaneous'
-    return HttpResponse.json({ category })
+    const category = name.includes('knife') || name.includes('kitchen') ? 'Kitchen' : name.includes('tooth') ? 'Bathroom' : 'Miscellaneous'
+    const confidence = category === 'Miscellaneous' ? 0.4 : 0.9
+    return HttpResponse.json({ category, confidence })
+  }),
+  http.post('/api/items', async ({ request }) => {
+    const body = await request.json().catch(() => ({})) as any
+    const id = Math.random().toString(36).slice(2)
+    return HttpResponse.json({ id, ...body }, { status: 201 })
+  }),
+  http.post('/api/items/:id/advanced', async ({ params, request }) => {
+    const { id } = params as { id: string }
+    const _body = await request.json().catch(() => ({}))
+    return HttpResponse.json({ id, ok: true })
   }),
 ]
 

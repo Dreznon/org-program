@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { postJSONWithFallback } from '../api/client'
+import Toast from '../components/Toast'
 
 export default function Upload() {
   const [step, setStep] = useState(1)
@@ -7,6 +9,11 @@ export default function Upload() {
   const [tags, setTags] = useState<string[]>([])
   const [quantity, setQuantity] = useState(1)
   const [category, setCategory] = useState('')
+  const [confidence, setConfidence] = useState<number | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState<{text:string, tone?:'success'|'error'}|null>(null)
+
+  function closeToast() { setToast(null) }
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', display: 'grid', gap: 12 }}>
@@ -24,7 +31,22 @@ export default function Upload() {
         </>
       )}
       {step===2 && (
-        <label style={{ display: 'grid', gap: 6 }}><span>Category</span><input value={category} onChange={e=>setCategory(e.target.value)} placeholder="Category"/></label>
+        <div style={{ display:'grid', gap: 8 }}>
+          <label style={{ display: 'grid', gap: 6 }}><span>Category</span><input value={category} onChange={e=>setCategory(e.target.value)} placeholder="Category"/></label>
+          {confidence !== null && (<div style={{ color:'#64748b' }}>Confidence: {Math.round(confidence*100)}%</div>)}
+          {(confidence !== null && confidence < 0.5) && (<div role="alert" style={{ color:'#b45309' }}>Low confidence. Please pick a category.</div>)}
+          <div style={{ display:'flex', gap:8 }}>
+            <button className="btn btn-secondary" onClick={async ()=>{
+              // re-categorize
+              try{
+                const res = await postJSONWithFallback<{category:string, confidence:number}>('/api/categorize', { title:name, description, tags, item_type:'manual' })
+                setCategory(res.category||'')
+                setConfidence(res.confidence ?? null)
+              }catch{ setToast({text:'Categorize failed', tone:'error'}) }
+            }}>Categorize</button>
+            <button className="btn btn-secondary" onClick={()=> setConfidence(null)}>Change</button>
+          </div>
+        </div>
       )}
       {step===3 && (
         <div style={{ display: 'grid', gap: 8 }}>
@@ -35,9 +57,31 @@ export default function Upload() {
       )}
       {step===4 && (<p>Ready to save your item.</p>)}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button onClick={()=>setStep(Math.max(1, step-1))}>Back</button>
-        <button onClick={()=> setStep(step<4? step+1 : 4)}>{step===4?'Save':'Next'}</button>
+        <button className="btn btn-secondary" onClick={()=>setStep(Math.max(1, step-1))}>Back</button>
+        <button className="btn btn-primary" onClick={async ()=>{
+          if (step<2) { setStep(step+1); return }
+          if (step===2) {
+            try{
+              const res = await postJSONWithFallback<{category:string, confidence:number}>('/api/categorize', { title:name, description, tags, item_type:'manual' })
+              setCategory(res.category||category)
+              setConfidence(res.confidence ?? null)
+              setStep(3)
+            }catch{ setToast({text:'Categorize failed', tone:'error'}) }
+            return
+          }
+          if (step===3) { setStep(4); return }
+          if (step===4) {
+            try{
+              setSaving(true)
+              await postJSONWithFallback('/api/items', { title:name, description, tags, quantity, category_id: category })
+              setToast({ text:'Saved!', tone:'success' })
+              setName(''); setDescription(''); setTags([]); setQuantity(1); setCategory(''); setConfidence(null); setStep(1)
+            } catch { setToast({ text:'Save failed', tone:'error' }) }
+            finally { setSaving(false) }
+          }
+        }}>{step===4?'Save':'Next'}</button>
       </div>
+      {toast && <div onAnimationEnd={closeToast}><Toast text={toast.text} tone={toast.tone} /></div>}
     </div>
   )
 }

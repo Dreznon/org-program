@@ -1,20 +1,22 @@
 export default function HowTo() {
   const tips = [
-    'Use “Add to Collection” to create items',
-    'We auto-categorize by name and tags',
-    'Browse categories and open item details',
-    'Advanced lets you edit extended metadata',
+    "Add items via 'Add to Collection'",
+    'We auto-categorize by typical storage location',
+    'Tap a category to see items; tap an item for details',
+    "Unsure? Use 'Move Category' in the item sheet",
   ]
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', display: 'grid', gap: 12 }}>
-      <h2>How to Use</h2>
-      <p>Quick tips to get started:</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-        {tips.map((t) => (
-          <div key={t} style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 16, padding: 12 }}>{t}</div>
+    <div className="container" aria-labelledby="howto-title">
+      <button onClick={() => history.back()} className="btn btn-secondary" aria-label="Back">← Back</button>
+      <h2 id="howto-title" style={{ fontSize: 40, marginTop: 16, marginBottom: 16 }}>How to Use</h2>
+      <div style={{ display:'grid', gap: 12 }}>
+        {tips.map((t, i) => (
+          <div key={i} className="card pad-4" style={{ display:'grid', gridTemplateColumns: 'auto 1fr', gap: 12, alignItems:'center' }}>
+            <div className="badge-number" aria-hidden>{i+1}</div>
+            <div style={{ fontSize: 18, lineHeight: 1.4 }}>{t}</div>
+          </div>
         ))}
       </div>
-      <p>Data is stored locally in your browser.</p>
     </div>
   )
 }

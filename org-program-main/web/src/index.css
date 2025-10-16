@@ -16,3 +16,41 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
   outline-offset: 2px;
   border-radius: 12px;
 }
+
+/* layout */
+.container { max-width: 1024px; margin: 0 auto; padding: 16px; }
+@media (min-width: 640px) { .container { padding-left: 24px; padding-right: 24px; } }
+@media (min-width: 1024px) { .container { padding-left: 32px; padding-right: 32px; } }
+
+/* surface cards and outline */
+.card { background: var(--card); border: 1px solid var(--outline); border-radius: var(--radius-card); box-shadow: var(--shadow); }
+.card.pad-4 { padding: 16px; }
+.card.pad-6 { padding: 24px; }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; font-weight: 600; cursor: pointer; border: 1px solid var(--outline); text-decoration: none; }
+.btn-primary { background: var(--primary); color: #fff; border-color: transparent; border-radius: var(--radius-cta); padding: 12px 18px; }
+.btn-primary:hover { opacity: 0.9; }
+.btn-secondary { background: transparent; color: var(--text); border-radius: var(--radius-input); padding: 10px 14px; }
+
+/* grids */
+.grid-categories { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (min-width: 1024px) { .grid-categories { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* badges */
+.badge-number { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 999px; background: var(--primary); color: #fff; font-weight: 700; }
+
+/* sticky bottom add */
+.fab-add { position: fixed; left: 50%; transform: translateX(-50%); bottom: 20px; }
+
+/* header */
+.app-header { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); border-bottom: 1px solid var(--outline); z-index: 10; }
+.app-title { margin: 0; font-size: 20px; }
+.app-nav { display: flex; gap: 12px; }
+
+/* modal */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.6); }
+.modal-shell { position: fixed; inset: 0; display: grid; place-items: center; z-index: 40; }
+.modal-card { width: min(720px, calc(100% - 24px)); border-radius: 24px; background: var(--card); border: 1px solid var(--outline); box-shadow: 0 20px 50px rgba(2,6,23,0.12); }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--outline); }
+.modal-body { padding: 16px 20px; max-height: calc(100vh - 200px); overflow: auto; }

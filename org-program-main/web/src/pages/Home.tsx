@@ -21,7 +21,7 @@ export default function Home() {
   }, [])
 
   return (
-    <div>
+    <div className="container">
       {categories === null && !error && (
         <div aria-busy="true" style={{ color:'#64748b', padding: 16 }}>Loading categories…</div>
       )}
@@ -32,13 +32,13 @@ export default function Home() {
         <div style={{ color:'#64748b', padding: 40, textAlign:'center' }}>No categories yet. Use “Add to Collection” to create your first item.</div>
       )}
       {Array.isArray(categories) && categories.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+        <div className="grid-categories">
           {categories.map((c) => (
             <CategoryCard key={c.id} title={c.name} count={c.count} onClick={() => navigate(`/category/${encodeURIComponent(c.id)}`)} />
           ))}
         </div>
       )}
-      <Link to="/upload" style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', padding: '14px 18px', borderRadius: 999, background: 'linear-gradient(90deg, #60a5fa, #3b82f6)', color: '#fff', border: 0, fontWeight: 700, letterSpacing: 0.3, textDecoration:'none' }}>
+      <Link to="/upload" className="btn btn-primary fab-add" style={{ textDecoration:'none' }}>
         + Add to Collection
       </Link>
     </div>

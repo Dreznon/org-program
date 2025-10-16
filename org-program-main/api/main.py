@@ -1,11 +1,13 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
 
 from .db import init_db, create_fts_tables
 from .routers import items as items_router
 from .routers import assets as assets_router
 from .routers import export as export_router
+from .db import get_upload_dir
 
 
 def create_app() -> FastAPI:
@@ -27,11 +29,19 @@ def create_app() -> FastAPI:
     
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
+        allow_origins=["*"],  # Temporarily allow all origins for debugging
+        allow_credentials=False,  # Disable credentials for debugging
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Serve uploaded files for development convenience
+    try:
+        upload_dir = get_upload_dir()
+        app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
+        print(f"[DEBUG][main] Mounted /uploads static dir: {upload_dir}")
+    except Exception as e:
+        print(f"[DEBUG][main] Failed to mount /uploads: {e}")
 
     # Initialize DB and FTS tables
     init_db()
@@ -46,15 +56,15 @@ def create_app() -> FastAPI:
     api.include_router(export_router.router)
     app.include_router(api)
 
-    # Security headers middleware
-    @app.middleware("http")
-    async def add_security_headers(request, call_next):
-        response = await call_next(request)
-        # Align with frontend CSP while allowing Google Fonts
-        csp = "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
-        response.headers['Content-Security-Policy'] = csp
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        return response
+    # Security headers middleware - temporarily disabled for debugging
+    # @app.middleware("http")
+    # async def add_security_headers(request, call_next):
+    #     response = await call_next(request)
+    #     # Align with frontend CSP while allowing Google Fonts
+    #     csp = "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+    #     response.headers['Content-Security-Policy'] = csp
+    #     response.headers['X-Content-Type-Options'] = 'nosniff'
+    #     return response
 
     # Health check endpoint
     @app.get("/")

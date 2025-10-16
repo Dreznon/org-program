@@ -16,6 +16,51 @@ from ..services.ocr import extract_ocr_stub
 
 
 router = APIRouter(prefix="/items", tags=["assets"])
+def _infer_subjects(filename: str, exif: dict, ocr: dict) -> list[str]:
+    """
+    Very simple, rule-based subject inference using filename tokens, EXIF hints, and OCR text.
+    This is intentionally conservative and capped to a handful of tags.
+    """
+    subjects: set[str] = set()
+
+    try:
+        base = os.path.splitext(os.path.basename(filename or ""))[0].lower()
+        tokens = {t for t in base.replace("_", " ").replace("-", " ").split() if len(t) > 2}
+
+        # Filename-driven categories
+        if any(t in tokens for t in {"library","museum","building","architecture","church","bridge","tower","castle"}):
+            subjects.add("architecture")
+            subjects.add("places")
+        if any(t in tokens for t in {"fan","art","drawing","sketch","illustration"}):
+            subjects.add("art")
+            subjects.add("fan art")
+
+        raw = (exif or {}).get("raw", {})
+
+        # EXIF Artist -> subject hint
+        artist = raw.get("Artist")
+        if isinstance(artist, (bytes, bytearray)):
+            try:
+                artist = artist.decode("utf-16-le", errors="ignore")
+            except Exception:
+                artist = str(artist)
+        if artist:
+            subjects.add("artist:" + str(artist).strip())
+
+        software = str(raw.get("Software") or "").lower()
+        if "scanner" in software:
+            subjects.add("scanned")
+
+        # OCR text keyword hints
+        text = (ocr or {}).get("text") or ""
+        if any(k in text.lower() for k in ["library","archive","museum"]):
+            subjects.add("places")
+
+    except Exception as e:
+        print(f"[DEBUG][assets._infer_subjects] inference failed: {e}")
+
+    # Limit number to keep UI tidy
+    return sorted(list(subjects))[:10]
 
 
 @router.post("/{item_id}/assets", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -94,6 +139,87 @@ async def upload_asset(
         item.coverage = f"{gps['lat']},{gps['lon']}"
         item_updated = True
     
+    # Subjects/category inference (rule-based)
+    suggested = _infer_subjects(original_name, exif, ocr)
+    if suggested:
+        before_subjects = set(item.subjects or [])
+        after_subjects = sorted(list(before_subjects.union(suggested)))
+        if after_subjects != item.subjects:
+            print(f"[DEBUG][assets.upload] inferred subjects add={suggested}")
+            item.subjects = after_subjects
+            item_updated = True
+
+    # Set high-level type from MIME
+    if not item.type:
+        if (mime_type or '').startswith('image/'):
+            item.type = 'photo'
+            item_updated = True
+        elif (mime_type or '').startswith('application/pdf'):
+            item.type = 'document'
+            item_updated = True
+
+    # Map EXIF raw to DC-like fields if empty
+    raw = (exif or {}).get("raw", {})
+
+    # description
+    if (not item.description or item.description.strip() == ""):
+        desc = raw.get("ImageDescription") or raw.get("XPComment")
+        if isinstance(desc, (bytes, bytearray)):
+            try:
+                desc = desc.decode("utf-16-le", errors="ignore")
+            except Exception:
+                desc = str(desc)
+        if desc and isinstance(desc, str) and desc.strip():
+            item.description = desc.strip()
+            item_updated = True
+
+    # creators
+    artist = raw.get("Artist") or raw.get("XPAuthor")
+    if artist:
+        if isinstance(artist, (bytes, bytearray)):
+            try:
+                artist = artist.decode("utf-16-le", errors="ignore")
+            except Exception:
+                artist = str(artist)
+        names = [n.strip() for n in str(artist).replace("|", ";").split(";") if n.strip()]
+        before = set(item.creators or [])
+        after = sorted(list(before.union(names)))
+        if after != item.creators:
+            item.creators = after
+            item_updated = True
+
+    # subjects from XPKeywords
+    xp_kw = raw.get("XPKeywords")
+    if xp_kw:
+        if isinstance(xp_kw, (bytes, bytearray)):
+            try:
+                xp_kw = xp_kw.decode("utf-16-le", errors="ignore")
+            except Exception:
+                xp_kw = str(xp_kw)
+        kw = [k.strip() for k in str(xp_kw).replace(",", ";").split(";") if k.strip()]
+        before = set(item.subjects or [])
+        after = sorted(list(before.union(kw)))
+        if after != item.subjects:
+            item.subjects = after
+            item_updated = True
+
+    # identifier as checksum
+    if checksum:
+        before_ids = set(item.identifiers or [])
+        after_ids = sorted(list(before_ids.union([checksum])))
+        if after_ids != item.identifiers:
+            item.identifiers = after_ids
+            item_updated = True
+
+    # source from Make/Model
+    if (not item.source or item.source.strip() == ""):
+        make = str(raw.get("Make") or "").strip()
+        model = str(raw.get("Model") or "").strip()
+        src = (make + " " + model).strip()
+        if src:
+            item.source = src
+            item_updated = True
+
     # Commit item updates if any were made
     if item_updated:
         session.commit()

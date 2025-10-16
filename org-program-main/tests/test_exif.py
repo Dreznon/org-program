@@ -271,3 +271,4 @@ def test_asset_exif_json_storage(client: TestClient, sample_item: Item):
         assert "lon" in exif_data["gps"]
         assert exif_data["raw"] is not None
         assert len(exif_data["raw"]) > 0
+

@@ -14,11 +14,13 @@
   <header class="app-header">
     <h1 class="app-title">My Collection</h1>
     <nav class="app-nav">
-      <a href="#howto" id="howto-link" class="link">How to Use</a>
+      <a href="#/" class="link">Home</a>
+      <a href="#/how-to" id="howto-link" class="link">How to Use</a>
+      <a href="#/upload" id="upload-link" class="link">Upload</a>
     </nav>
   </header>
 
-  <main id="app" class="app-main">
+  <main id="app" class="app-main" role="main" tabindex="-1">
     <!-- Content rendered by app.js -->
   </main>
 
@@ -27,35 +29,8 @@
   </button>
 
   <div id="modal-backdrop" class="modal-backdrop" hidden></div>
-  <div id="add-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="add-modal-title" hidden>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="add-modal-title">Add to Collection</h2>
-        <button id="modal-close" class="icon-button" aria-label="Close">✕</button>
-      </div>
-      <form id="add-form" class="modal-body">
-        <label class="field">
-          <span>Name</span>
-          <input name="name" placeholder="e.g., Toothbrush" required>
-        </label>
-        <label class="field">
-          <span>Description</span>
-          <textarea name="description" placeholder="Optional details"></textarea>
-        </label>
-        <label class="field">
-          <span>Tags (comma-separated)</span>
-          <input name="tags" placeholder="e.g., bathroom, hygiene">
-        </label>
-        <label class="field">
-          <span>Quantity</span>
-          <input name="quantity" type="number" min="1" value="1">
-        </label>
-        <div class="modal-actions">
-          <button type="button" id="modal-cancel" class="button secondary">Cancel</button>
-          <button type="submit" class="button primary">Add Item</button>
-        </div>
-      </form>
-    </div>
+  <div id="advanced-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="advanced-modal-title" hidden>
+    <div class="modal-content" id="advanced-modal-content"></div>
   </div>
 
   <script src="/app.js" type="module"></script>

@@ -17,6 +17,9 @@ def extract_exif(file_path: str) -> Dict[str, Any]:
         - "gps": {"lat": float, "lon": float} or None  
         - "raw": dict of all EXIF data
     """
+    # Debug: starting EXIF extraction
+    print(f"[DEBUG][exif.extract_exif] Start extraction for: {file_path}")
+
     result = {
         "date": None,
         "gps": None,
@@ -30,7 +33,7 @@ def extract_exif(file_path: str) -> Dict[str, Any]:
             
         # Open image and extract EXIF
         with Image.open(file_path) as image:
-            exif_dict = image._getexif()
+            exif_dict = image.getexif()
             
             if exif_dict is None:
                 return result
@@ -41,7 +44,8 @@ def extract_exif(file_path: str) -> Dict[str, Any]:
                 tag = TAGS.get(tag_id, tag_id)
                 exif_data[tag] = value
                 
-            result["raw"] = exif_data
+            # Sanitize raw EXIF to be JSON-safe before storing
+            result["raw"] = _to_json_safe(exif_data)
             
             # Extract date
             date_str = _extract_date_from_exif(exif_data)
@@ -55,8 +59,15 @@ def extract_exif(file_path: str) -> Dict[str, Any]:
                 
     except Exception as e:
         # Log error but don't fail the upload
-        print(f"EXIF extraction failed for {file_path}: {e}")
+        print(f"[DEBUG][exif.extract_exif] EXIF extraction failed for {file_path}: {e}")
         
+    # Final debug log with a brief summary of sanitized keys
+    try:
+        raw_keys_preview = list(result.get("raw", {}).keys())[:10]
+        print(f"[DEBUG][exif.extract_exif] Done for: {file_path} | date={result['date']} gps={result['gps']} raw_keys={raw_keys_preview}")
+    except Exception:
+        pass
+
     return result
 
 
@@ -116,21 +127,78 @@ def _extract_gps_from_exif(exif_data: Dict[str, Any]) -> Optional[Dict[str, floa
 
 
 def _dms_to_decimal(dms_data: tuple, ref: str) -> Optional[float]:
-    """Convert DMS (Degrees, Minutes, Seconds) to decimal degrees."""
+    """Convert DMS (Degrees, Minutes, Seconds) to decimal degrees, handling rationals."""
     try:
-        degrees, minutes, seconds = dms_data
-        
-        # Convert to decimal
-        decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
-        
-        # Apply reference (S/W are negative)
+        # Normalize tuple fractions (num, den) to floats
+        def to_float(x): 
+            return x[0] / x[1] if isinstance(x, tuple) else float(x)
+
+        d, m, s = map(to_float, dms_data)
+
+        # Sometimes ref is bytes, not str
+        if isinstance(ref, bytes):
+            ref = ref.decode(errors="ignore")
+
+        decimal = d + (m / 60.0) + (s / 3600.0)
         if ref in ['S', 'W']:
             decimal = -decimal
-            
         return decimal
-        
     except Exception:
         return None
+
+
+def _to_json_safe(value: Any) -> Any:
+    """Recursively convert EXIF structures to JSON-serializable values.
+
+    This handles types commonly returned by PIL/piexif such as IFDRational, bytes,
+    tuples of rationals, sets, etc. The goal is to preserve as much information as
+    reasonably possible while ensuring the structure can be serialized to JSON.
+    """
+    # Handle None and primitives quickly
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+
+    # piexif IFDRational and similar: has numerator/denominator
+    if hasattr(value, "numerator") and hasattr(value, "denominator"):
+        try:
+            denom = value.denominator
+            num = value.numerator
+            if denom == 0:
+                return float("nan")
+            return float(num) / float(denom)
+        except Exception:
+            # Fallback to string representation
+            return str(value)
+
+    # bytes: attempt to decode as utf-8, fallback to latin-1; never raise
+    if isinstance(value, (bytes, bytearray)):
+        try:
+            return value.decode("utf-8", errors="replace")
+        except Exception:
+            try:
+                return value.decode("latin-1", errors="replace")
+            except Exception:
+                return str(value)
+
+    # tuple/list: sanitize each element
+    if isinstance(value, (list, tuple)):
+        return [_to_json_safe(v) for v in value]
+
+    # dict: sanitize keys (to str) and values
+    if isinstance(value, dict):
+        safe_dict: Dict[str, Any] = {}
+        for k, v in value.items():
+            # EXIF keys may be ints; convert all keys to strings for JSON
+            key_str = str(k)
+            safe_dict[key_str] = _to_json_safe(v)
+        return safe_dict
+
+    # set and other iterables: convert to list
+    if isinstance(value, (set, frozenset)):
+        return [_to_json_safe(v) for v in value]
+
+    # Fallback: string representation as a last resort
+    return str(value)
 
 
 # Legacy function for backward compatibility

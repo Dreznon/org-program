@@ -259,12 +259,10 @@ const CreateItem: React.FC<CreateItemProps> = ({ onItemCreated }) => {
         </div>
 
         <div className="form-actions">
-          <button type="submit" disabled={loading} className="btn btn-primary">
-            {loading ? 'Creating...' : 'Create Item'}
+          <button type="submit" disabled={loading} className="btn btn-primary" style={{ padding:'14px 18px' }}>
+            {loading ? 'Creating...' : 'Save'}
           </button>
-          <button type="button" onClick={() => navigate('/')} className="btn btn-secondary">
-            Cancel
-          </button>
+          <button type="button" onClick={() => navigate('/')} className="btn btn-secondary">Cancel</button>
         </div>
       </form>
     </div>

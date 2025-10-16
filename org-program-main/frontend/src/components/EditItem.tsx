@@ -13,6 +13,7 @@ const EditItem: React.FC<EditItemProps> = ({ onItemUpdated }) => {
   const [loading, setLoading] = useState(false);
   const [item, setItem] = useState<Item | null>(null);
   const [formData, setFormData] = useState<ItemUpdate>({});
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -103,12 +104,14 @@ const EditItem: React.FC<EditItemProps> = ({ onItemUpdated }) => {
     <div className="edit-item">
       <div className="edit-item-header">
         <h1>Edit Item</h1>
-        <button onClick={() => navigate(`/item/${id}`)} className="btn btn-secondary">
-          Cancel
-        </button>
+        <div className="header-actions">
+          <button type="button" onClick={() => setShowAdvanced(true)} className="btn btn-secondary">Advanced</button>
+          <button onClick={() => navigate(`/item/${id}`)} className="btn btn-secondary">Cancel</button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="item-form">
+        {/* Primary fields visible */}
         <div className="form-group">
           <label htmlFor="title">Title *</label>
           <input
@@ -147,18 +150,6 @@ const EditItem: React.FC<EditItemProps> = ({ onItemUpdated }) => {
               className="form-input"
             />
           </div>
-
-          <div className="form-group">
-            <label htmlFor="type">Type</label>
-            <input
-              type="text"
-              id="type"
-              name="type"
-              value={formData.type || ''}
-              onChange={handleInputChange}
-              className="form-input"
-            />
-          </div>
         </div>
 
         <div className="form-row">
@@ -173,94 +164,6 @@ const EditItem: React.FC<EditItemProps> = ({ onItemUpdated }) => {
               className="form-input"
             />
           </div>
-
-          <div className="form-group">
-            <label htmlFor="publisher">Publisher</label>
-            <input
-              type="text"
-              id="publisher"
-              name="publisher"
-              value={formData.publisher || ''}
-              onChange={handleInputChange}
-              className="form-input"
-            />
-          </div>
-        </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="language">Language</label>
-            <input
-              type="text"
-              id="language"
-              name="language"
-              value={formData.language || ''}
-              onChange={handleInputChange}
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="source">Source</label>
-            <input
-              type="text"
-              id="source"
-              name="source"
-              value={formData.source || ''}
-              onChange={handleInputChange}
-              className="form-input"
-            />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="coverage">Coverage</label>
-          <input
-            type="text"
-            id="coverage"
-            name="coverage"
-            value={formData.coverage || ''}
-            onChange={handleInputChange}
-            className="form-input"
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="rights">Rights</label>
-          <input
-            type="text"
-            id="rights"
-            name="rights"
-            value={formData.rights || ''}
-            onChange={handleInputChange}
-            className="form-input"
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="creators">Creators (comma-separated)</label>
-          <input
-            type="text"
-            id="creators"
-            name="creators"
-            value={formData.creators?.join(', ') || ''}
-            onChange={handleArrayInputChange}
-            placeholder="John Doe, Jane Smith"
-            className="form-input"
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="contributors">Contributors (comma-separated)</label>
-          <input
-            type="text"
-            id="contributors"
-            name="contributors"
-            value={formData.contributors?.join(', ') || ''}
-            onChange={handleArrayInputChange}
-            placeholder="John Doe, Jane Smith"
-            className="form-input"
-          />
         </div>
 
         <div className="form-group">
@@ -276,28 +179,72 @@ const EditItem: React.FC<EditItemProps> = ({ onItemUpdated }) => {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="identifiers">Identifiers (comma-separated)</label>
-          <input
-            type="text"
-            id="identifiers"
-            name="identifiers"
-            value={formData.identifiers?.join(', ') || ''}
-            onChange={handleArrayInputChange}
-            placeholder="ISBN:123456789, DOI:10.1000/123"
-            className="form-input"
-          />
-        </div>
-
         <div className="form-actions">
-          <button type="submit" disabled={loading} className="btn btn-primary">
-            {loading ? 'Updating...' : 'Update Item'}
+          <button type="submit" disabled={loading} className="btn btn-primary" style={{ padding:'14px 18px' }}>
+            {loading ? 'Updating...' : 'Save'}
           </button>
-          <button type="button" onClick={() => navigate(`/item/${id}`)} className="btn btn-secondary">
-            Cancel
-          </button>
+          <button type="button" onClick={() => navigate(`/item/${id}`)} className="btn btn-secondary">Cancel</button>
         </div>
       </form>
+
+      {/* Advanced modal with secondary fields */}
+      {showAdvanced && (
+        <div className="modal-backdrop">
+          <div className="modal">
+            <div className="modal-header">
+              <h3>Advanced metadata</h3>
+              <button type="button" className="btn btn-light" onClick={() => setShowAdvanced(false)}>Close</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="type">Type</label>
+                  <input type="text" id="type" name="type" value={formData.type || ''} onChange={handleInputChange} className="form-input" />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="publisher">Publisher</label>
+                  <input type="text" id="publisher" name="publisher" value={formData.publisher || ''} onChange={handleInputChange} className="form-input" />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="language">Language</label>
+                  <input type="text" id="language" name="language" value={formData.language || ''} onChange={handleInputChange} className="form-input" />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="source">Source</label>
+                  <input type="text" id="source" name="source" value={formData.source || ''} onChange={handleInputChange} className="form-input" />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="coverage">Coverage</label>
+                  <input type="text" id="coverage" name="coverage" value={formData.coverage || ''} onChange={handleInputChange} className="form-input" />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="rights">Rights</label>
+                  <input type="text" id="rights" name="rights" value={formData.rights || ''} onChange={handleInputChange} className="form-input" />
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="creators">Creators (comma-separated)</label>
+                <input type="text" id="creators" name="creators" value={formData.creators?.join(', ') || ''} onChange={handleArrayInputChange} placeholder="John Doe, Jane Smith" className="form-input" />
+              </div>
+              <div className="form-group">
+                <label htmlFor="contributors">Contributors (comma-separated)</label>
+                <input type="text" id="contributors" name="contributors" value={formData.contributors?.join(', ') || ''} onChange={handleArrayInputChange} placeholder="John Doe, Jane Smith" className="form-input" />
+              </div>
+              <div className="form-group">
+                <label htmlFor="identifiers">Identifiers (comma-separated)</label>
+                <input type="text" id="identifiers" name="identifiers" value={formData.identifiers?.join(', ') || ''} onChange={handleArrayInputChange} placeholder="ISBN:123456789, DOI:10.1000/123" className="form-input" />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-secondary" onClick={() => setShowAdvanced(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

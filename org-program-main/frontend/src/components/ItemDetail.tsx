@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Item } from '../types';
 import { itemsApi, assetsApi } from '../lib/api';
+import { API_BASE } from '../lib/api';
 
 interface ItemDetailProps {
   onItemUpdated: (item: Item) => void;
@@ -81,11 +82,11 @@ const ItemDetail: React.FC<ItemDetailProps> = () => {
   return (
     <div className="item-detail">
       <div className="item-detail-header">
-        <Link to="/" className="back-link">← Back to Items</Link>
+        <Link to="/" className="back-link">← Back</Link>
         <div className="item-actions">
-          <Link to={`/edit/${item.id}`} className="btn btn-primary">
-            Edit Item
-          </Link>
+          <Link to={`/edit/${item.id}`} className="btn btn-secondary">Edit</Link>
+          <Link to="/" className="btn btn-secondary">Move Category</Link>
+          <Link to="/" className="btn btn-primary">Close</Link>
         </div>
       </div>
 
@@ -188,6 +189,21 @@ const ItemDetail: React.FC<ItemDetailProps> = () => {
                     <span className="asset-size">{formatFileSize(asset.bytes)}</span>
                     <span className="asset-type">{asset.mime_type}</span>
                   </div>
+                  {/* Link to open the stored asset in a new tab */}
+                  {asset.file_path && (
+                    <div className="asset-actions">
+                      {(() => {
+                        // Normalize Windows path separators to URL-friendly slashes
+                        const normalized = asset.file_path.replace(/\\/g, '/');
+                        const href = `${API_BASE}/${normalized}`;
+                        return (
+                          <a href={href} target="_blank" rel="noreferrer" className="btn btn-link">
+                            Open file
+                          </a>
+                        );
+                      })()}
+                    </div>
+                  )}
                   {asset.ocr_json?.text && (
                     <div className="ocr-text">
                       <strong>OCR Text:</strong>

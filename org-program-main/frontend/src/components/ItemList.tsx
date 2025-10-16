@@ -58,7 +58,7 @@ const ItemList: React.FC<ItemListProps> = ({
     <div className="item-list">
       <div className="search-section" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'1rem' }}>
         <h1 className="section-title" style={{ margin:0 }}>Your Collection</h1>
-        <a href="#/how-to" className="help-pill">Help</a>
+        <Link to="/how-to" className="help-pill">Help</Link>
       </div>
       <div className="search-section">
         <input
@@ -66,6 +66,7 @@ const ItemList: React.FC<ItemListProps> = ({
           placeholder="Search items..."
           value={searchQuery}
           onChange={(e) => onSearch(e.target.value)}
+          onKeyDown={(e) => { e.stopPropagation(); }}
           className="search-rounded"
         />
       </div>

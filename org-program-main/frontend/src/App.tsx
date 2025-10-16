@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import HowTo from './components/HowTo';
 import { itemsApi } from './lib/api';
 import type { Item } from './types';
 import ItemList from './components/ItemList';
@@ -110,6 +111,9 @@ function App() {
                 />
               } 
             />
+          </Routes>
+          <Routes>
+            <Route path="/how-to" element={<HowTo />} />
           </Routes>
         </main>
       </div>

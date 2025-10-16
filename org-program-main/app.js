@@ -281,88 +281,70 @@ function howtoView() {
   app.appendChild(wrap);
 }
 
-// Upload wizard (Enter → Categorize → Review → Save)
+// Upload single-card flow (Enter Manually)
 function uploadView() {
   log('render upload');
-  let step = 1;
-  const state = { name:'', description:'', tags:[], quantity:1, category:'' };
   const app = document.getElementById('app');
   app.textContent = '';
+
   const wrap = document.createElement('div');
   wrap.className = 'wizard';
 
-  const steps = document.createElement('div');
-  steps.className = 'wizard-steps';
-  const setSteps = () => {
-    steps.textContent = '';
-    ['Enter','Categorize','Review','Save'].forEach((label, i) => {
-      const s = document.createElement('div');
-      s.className = 'step' + (i+1===step ? ' active' : '');
-      s.textContent = `${i+1}. ${label}`;
-      steps.appendChild(s);
-    });
-  };
-  wrap.appendChild(steps);
+  // segmented control (visual)
+  const seg = document.createElement('div'); seg.className = 'segmented';
+  ['Scan Photo','Upload Photo','Enter Manually'].forEach((t,i)=>{ const b=document.createElement('button'); b.className='seg'+(i===2?' active':''); b.classList.add('seg'); b.textContent=t; seg.appendChild(b); });
+  wrap.appendChild(seg);
 
-  const body = document.createElement('div');
-  wrap.appendChild(body);
+  // form card
+  const card = document.createElement('div'); card.className = 'card pad-6';
+  const fields = document.createElement('div'); fields.className = 'modal-body';
+  const state = { name:'', description:'', tags:[], itemType:'manual', category:'', confidence:null };
+  const title = document.createElement('input'); title.placeholder='Title'; title.addEventListener('input',()=> state.name = title.value.trim());
+  const desc = document.createElement('input'); desc.placeholder='Description'; desc.addEventListener('input',()=> state.description = desc.value.trim());
+  const tags = document.createElement('input'); tags.placeholder='comma-separated'; tags.addEventListener('input',()=> state.tags = tags.value.split(',').map(s=>s.trim()).filter(Boolean));
+  const mk = (label, el) => { const field=document.createElement('label'); field.className='field'; const span=document.createElement('span'); span.textContent=label; field.appendChild(span); field.appendChild(el); return field; };
+  fields.appendChild(mk('Title', title));
+  fields.appendChild(mk('Description', desc));
+  fields.appendChild(mk('Tags', tags));
+  fields.appendChild(mk('Item Type', document.createElement('span')));
+  const catBtn = document.createElement('button'); catBtn.className='button primary'; catBtn.textContent='Categorize';
+  fields.appendChild(catBtn);
+  const catRow = document.createElement('div'); catRow.style.display='flex'; catRow.style.justifyContent='space-between'; catRow.style.alignItems='center'; catRow.style.marginTop='8px';
+  const catLabel = document.createElement('div'); const change = document.createElement('button'); change.className='button secondary'; change.textContent='Change';
+  change.addEventListener('click', () => { const v = prompt('Enter category', state.category || DefaultCategory); if (v) { state.category = v; catLabel.textContent = `Category: ${state.category}${state.confidence?` (${Math.round(state.confidence*100)}%)`:''}`; } });
+  catRow.appendChild(catLabel); catRow.appendChild(change);
+  fields.appendChild(catRow);
+  card.appendChild(fields);
+  wrap.appendChild(card);
 
-  const actions = document.createElement('div');
-  actions.className = 'form-actions';
-  const prevBtn = document.createElement('button');
-  prevBtn.className = 'button secondary';
-  prevBtn.textContent = 'Back';
-  prevBtn.addEventListener('click', () => { if (step>1) { step--; renderStep(); } });
-  const nextBtn = document.createElement('button');
-  nextBtn.className = 'button primary';
-  nextBtn.textContent = 'Next';
-  nextBtn.addEventListener('click', () => { if (step<4) { step++; if (step===2) state.category = categorize(state.name, state.tags); renderStep(); } else saveAndExit(); });
-  actions.appendChild(prevBtn);
-  actions.appendChild(nextBtn);
-  wrap.appendChild(actions);
-
-  function renderStep() {
-    setSteps();
-    body.textContent = '';
-    prevBtn.disabled = (step===1);
-    nextBtn.textContent = (step===4) ? 'Save' : 'Next';
-    if (step===1) {
-      const f = document.createElement('form');
-      f.addEventListener('submit', (e)=>e.preventDefault());
-      const name = document.createElement('input'); name.placeholder='Name (required)'; name.required=true; name.addEventListener('input', () => state.name = name.value.trim());
-      const desc = document.createElement('textarea'); desc.placeholder='Description (optional)'; desc.addEventListener('input', () => state.description = desc.value.trim());
-      const tags = document.createElement('input'); tags.placeholder='Tags (comma)'; tags.addEventListener('input', () => state.tags = tags.value.split(',').map(s=>s.trim()).filter(Boolean).filter(t=>TAG_PATTERN.test(t)));
-      const qty = document.createElement('input'); qty.type='number'; qty.min='1'; qty.value='1'; qty.addEventListener('input', () => state.quantity = Math.max(1, Math.floor(Number(qty.value)||1)));
-      [name, desc, tags, qty].forEach(el => { const field = document.createElement('label'); field.className='field'; const span=document.createElement('span'); span.textContent = (el===name?'Name':el===desc?'Description':el===tags?'Tags':'Quantity'); field.appendChild(span); field.appendChild(el); body.appendChild(field); });
-      name.focus();
-    } else if (step===2) {
-      const p = document.createElement('p'); p.textContent = 'Proposed category based on the name/tags:'; body.appendChild(p);
-      const cat = document.createElement('input'); cat.value = state.category || DefaultCategory; cat.addEventListener('input', ()=> state.category = cat.value.trim()); const field=document.createElement('label'); field.className='field'; const span=document.createElement('span'); span.textContent='Category'; field.appendChild(span); field.appendChild(cat); body.appendChild(field);
-    } else if (step===3) {
-      const summary = document.createElement('div'); summary.className='meta-grid';
-      const mk = (k,v) => { const m=document.createElement('div'); m.className='meta-field'; m.textContent = `${k}: ${v}`; summary.appendChild(m); };
-      mk('Name', state.name||'-'); mk('Description', state.description||'-'); mk('Tags', state.tags.join(', ')||'-'); mk('Quantity', state.quantity); mk('Category', state.category||DefaultCategory);
-      body.appendChild(summary);
-    } else {
-      const p = document.createElement('p'); p.textContent='Ready to save your item.'; body.appendChild(p);
-    }
+  // review
+  const review = document.createElement('div'); review.className='review-card';
+  function renderReview(){
+    review.textContent='';
+    const lines = [state.name||'Title', state.description||'Description', `${state.tags.length?`Tags: ${state.tags.join(' · ')}`:'Tags'}`, `Category: ${state.category||'-'}`];
+    lines.forEach(t=>{ const d=document.createElement('div'); d.textContent=t; review.appendChild(d); });
   }
+  renderReview();
+  wrap.appendChild(review);
 
-  function saveAndExit() {
-    if (!state.name) { alert('Name is required'); step=1; renderStep(); return; }
-    const item = { id:createId(), name:state.name, description:state.description, tags:state.tags, quantity:state.quantity, category:state.category||DefaultCategory, createdAt:Date.now() };
-    const items = readItems(); items.push(item); writeItems(items);
-    log('saved item', item.id);
-    navigateTo(Routes.Home);
+  // Save button (full width)
+  const save = document.createElement('button'); save.className='button primary'; save.textContent='Save'; save.style.width='100%'; save.style.padding='14px 18px'; save.style.marginTop='8px';
+  save.addEventListener('click', () => {
+    if (!state.name) { alert('Title required'); return; }
+    const item = { id:createId(), name:state.name, description:state.description, tags:state.tags, quantity:1, category:state.category||DefaultCategory, createdAt:Date.now() };
+    const items = readItems(); items.push(item); writeItems(items); navigateTo(Routes.Home);
+  });
+  wrap.appendChild(save);
+
+  // categorize logic (local heuristic)
+  function doCategorize(){
+    const predicted = classifyCategory(state.name, state.tags);
+    state.category = predicted; state.confidence = (predicted===DefaultCategory?0.42:0.92);
+    catLabel.textContent = `Category: ${state.category} (${Math.round(state.confidence*100)}%)`;
+    renderReview();
   }
+  catBtn.addEventListener('click', doCategorize);
 
-  function categorize(name, tags) {
-    const n = (name||'').trim();
-    if (!n) return DefaultCategory;
-    return classifyCategory(n, tags||[]);
-  }
-
-  renderStep();
   app.appendChild(wrap);
 }
 

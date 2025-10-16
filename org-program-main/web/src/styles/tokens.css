@@ -1,0 +1,6 @@
+:root {
+  --primary:#3B82F6; --text:#0F172A; --surface:#F8FAFC; --card:#FFFFFF; --outline:#E2E8F0;
+  --radius-card:16px; --radius-input:12px; --radius-cta:24px;
+  --shadow: 0 10px 25px rgba(2, 6, 23, 0.08);
+}
+
